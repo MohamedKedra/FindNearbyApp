@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.mohamed.findnearbyapp.Models.Item
+import com.mohamed.findnearbyapp.Models.PhotoItem
 import com.mohamed.findnearbyapp.R
 
 class PlaceAdapter(var places : List<Item>) : RecyclerView.Adapter<PlaceAdapter.PlaceHolder>() {

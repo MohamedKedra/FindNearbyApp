@@ -1,3 +1,6 @@
 package com.mohamed.findnearbyapp.Models
 
-class Photo()
+class Photo(
+    val count : Int,
+    val items : List<PhotoItem>
+)

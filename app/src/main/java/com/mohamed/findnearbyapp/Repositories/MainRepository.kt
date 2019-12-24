@@ -6,9 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import com.mohamed.findnearbyapp.API.Client
 import com.mohamed.findnearbyapp.API.NearbyService
 import com.mohamed.findnearbyapp.Constant
-import com.mohamed.findnearbyapp.Models.Item
-import com.mohamed.findnearbyapp.Models.PlacesResponse
-import com.mohamed.findnearbyapp.Models.Venue
+import com.mohamed.findnearbyapp.Models.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -27,17 +25,30 @@ class MainRepository(context: Context) {
                         items.value = null
                     }
 
-                    override fun onResponse(
-                        call: Call<PlacesResponse>,
-                        response: Response<PlacesResponse>
-                    ) {
-                        if (response.isSuccessful && response.body() != null){
+                    override fun onResponse(call: Call<PlacesResponse>, response: Response<PlacesResponse>) {
+                        if (response.isSuccessful && response.body() != null) {
                             items.value = response.body()?.response?.groups?.get(0)?.items
                         }
                     }
 
                 })
         return items
+    }
+
+    fun getVenuePhoto(id: String): LiveData<List<PhotoItem>>? {
+        var photos = MutableLiveData<List<PhotoItem>>()
+        service.getVenuePhoto(id, Constant.ClientID, Constant.ClientSecret, "20191223")
+            .enqueue(
+                object : Callback<VenuePhotoResponse> {
+                override fun onResponse(call: Call<VenuePhotoResponse>, response: Response<VenuePhotoResponse>) {
+                    photos.value = response.body()?.response?.photos?.get(0)?.items
+                }
+
+                override fun onFailure(call: Call<VenuePhotoResponse>, t: Throwable) {
+                    photos.value = null
+                }
+            })
+        return photos
     }
 
 }
