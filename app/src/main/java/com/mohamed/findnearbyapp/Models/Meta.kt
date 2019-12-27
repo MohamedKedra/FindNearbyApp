@@ -1,6 +1,6 @@
 package com.mohamed.findnearbyapp.Models
 
-class Meta(
-    code: Int,
-    requestId: String
+data class Meta(
+    val code: Int,
+    val requestId: String
 )
