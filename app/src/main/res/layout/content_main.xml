@@ -15,37 +15,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
-    <ProgressBar
-        android:id="@+id/pb_loading"
+    <com.mohamed.findnearbyapp.AppStateView
+        android:id="@+id/sv_state"
         android:layout_centerInParent="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
-
-    <LinearLayout
-        android:visibility="gone"
-        android:id="@+id/lay_error"
-        android:layout_centerInParent="true"
-        android:orientation="vertical"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-        <ImageView
-            android:id="@+id/iv_error"
-            android:src="@drawable/ic_no_data"
-            android:adjustViewBounds="true"
-            android:scaleType="centerCrop"
-            android:layout_width="120dp"
-            android:layout_height="120dp"/>
-
-        <TextView
-            android:id="@+id/tv_error"
-            android:layout_margin="8dp"
-            android:layout_gravity="center"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No Data Found"
-            />
-
-    </LinearLayout>
 
 </RelativeLayout>

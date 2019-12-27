@@ -28,6 +28,8 @@ class MainRepository(context: Context) {
                     override fun onResponse(call: Call<PlacesResponse>, response: Response<PlacesResponse>) {
                         if (response.isSuccessful && response.body() != null) {
                             items.value = response.body()?.response?.groups?.get(0)?.items
+                        }else{
+                            items.value = emptyList()
                         }
                     }
 
@@ -41,7 +43,7 @@ class MainRepository(context: Context) {
             .enqueue(
                 object : Callback<VenuePhotoResponse> {
                 override fun onResponse(call: Call<VenuePhotoResponse>, response: Response<VenuePhotoResponse>) {
-                    photos.value = response.body()?.response?.photos?.get(0)?.items
+                    photos.value = response.body()?.response?.photos?.items
                 }
 
                 override fun onFailure(call: Call<VenuePhotoResponse>, t: Throwable) {

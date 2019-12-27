@@ -16,7 +16,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return repository.getAllVenues(lat,lng)
     }
 
-    fun getPhoto(id : String): PhotoItem? {
-        return repository.getVenuePhoto(id)?.value?.get(0)
+    fun getPhoto(id : String): LiveData<List<PhotoItem>>? {
+        return repository.getVenuePhoto(id)
     }
 }

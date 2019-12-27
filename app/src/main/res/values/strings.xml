@@ -1,5 +1,11 @@
 <resources>
     <string name="app_name">FindNearbyApp</string>
+
     <string name="action_realtime">Realtime</string>
     <string name="action_single">Single Update</string>
+
+    <string name="msg_loading">Please wait ....</string>
+    <string name="msg_error">Something went wrong !! </string>
+    <string name="msg_no_data">No data found !!</string>
+
 </resources>

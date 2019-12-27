@@ -6,7 +6,7 @@ data class VenuePhotoResponse(
 )
 
 data class PhotoResponse(
-    val photos : List<Photo>
+    val photos : Photo
 )
 
 data class Photo(
@@ -15,7 +15,7 @@ data class Photo(
 )
 
 data class PhotoItem (
-    val id : Int,
+    val id : String,
     val prefix : String,
     val suffix : String,
     val width : Int,

@@ -9,6 +9,7 @@ import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
@@ -23,16 +24,23 @@ import com.mohamed.findnearbyapp.Adapters.PlaceAdapter
 import com.mohamed.findnearbyapp.AppPref
 import com.mohamed.findnearbyapp.Constant
 import com.mohamed.findnearbyapp.Models.Item
+import com.mohamed.findnearbyapp.Models.PhotoItem
+import com.mohamed.findnearbyapp.OnSelectItemListener
 import com.mohamed.findnearbyapp.R
 import com.mohamed.findnearbyapp.ViewModels.MainViewModel
+import com.squareup.picasso.Picasso
 
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
+import kotlinx.android.synthetic.main.item_place.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), OnSelectItemListener {
 
-    lateinit var viewModel: MainViewModel
-    lateinit var adapter: PlaceAdapter
+    private lateinit var viewModel: MainViewModel
+    private lateinit var adapter: PlaceAdapter
     private val permissionRequestCode: Int = 1
     lateinit var fusedLocation: FusedLocationProviderClient
 
@@ -44,10 +52,36 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
+        initState()
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
         pref = AppPref(this)
         fusedLocation = LocationServices.getFusedLocationProviderClient(this)
         getLocation()
+    }
+
+    private fun initState() {
+        sv_state.setLoading(true)
+        sv_state.setMessage(getString(R.string.msg_loading))
+    }
+
+    override fun onSelect(venueId: String, isPhotoDisplayed: Boolean) {
+
+        if (isPhotoDisplayed) {
+            iv_photo.visibility = View.GONE
+        } else {
+            viewModel.getPhoto(venueId)?.observe(this, Observer<List<PhotoItem>>{ photos ->
+                if (!photos.isNullOrEmpty()){
+                    iv_photo.visibility = View.VISIBLE
+                    Picasso.with(this)
+                        .load("${photos[0].prefix}${photos[0].width}x${photos[0].height}${photos[0].suffix}")
+                        .error(R.drawable.ic_error_icon)
+                        .into(iv_photo)
+                }else{
+                    Toast.makeText(this@MainActivity,"No Photos",Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
+
     }
 
     private fun getLocation() {
@@ -127,13 +161,20 @@ class MainActivity : AppCompatActivity() {
         viewModel.getAllPlaces(lastLocation.latitude, lastLocation.longitude)
             ?.observe(this@MainActivity,
                 Observer<List<Item>> { items ->
-                    pb_loading.visibility = View.GONE
+                    sv_state.setLoading(false)
                     if (items != null) {
-                        adapter = PlaceAdapter(this@MainActivity,items)
-                        rv_places.adapter = adapter
-                        rv_places.layoutManager = LinearLayoutManager(this@MainActivity)
+                        if (items.isNotEmpty()) {
+                            sv_state.visibility = View.GONE
+                            adapter = PlaceAdapter(this@MainActivity, items, this)
+                            rv_places.adapter = adapter
+                            rv_places.layoutManager = LinearLayoutManager(this@MainActivity)
+                        } else {
+                            sv_state.setIconMessage(R.drawable.ic_no_data)
+                            sv_state.setMessage(getString(R.string.msg_no_data))
+                        }
                     } else {
-                        lay_error.visibility = View.VISIBLE
+                        sv_state.setIconMessage(R.drawable.ic_error_data)
+                        sv_state.setMessage(getString(R.string.msg_error))
                     }
                 })
     }
