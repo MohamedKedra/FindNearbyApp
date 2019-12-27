@@ -24,6 +24,8 @@ import com.example.revisionviewmodel.GPSTracker
 import com.example.revisionviewmodel.LocationGPS
 import com.google.android.gms.location.*
 import com.mohamed.findnearbyapp.Adapters.PlaceAdapter
+import com.mohamed.findnearbyapp.AppPref
+import com.mohamed.findnearbyapp.Constant
 import com.mohamed.findnearbyapp.Models.Item
 import com.mohamed.findnearbyapp.Models.PhotoItem
 import com.mohamed.findnearbyapp.R
@@ -36,36 +38,41 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var viewModel: MainViewModel
     lateinit var adapter: PlaceAdapter
-    var photos : List<PhotoItem>? = null
-    private val PERMISSION_ID: Int = 1
-    lateinit var fusedLocation : FusedLocationProviderClient
+    var photos: List<PhotoItem>? = null
+    private val permissionRequestCode: Int = 1
+    lateinit var fusedLocation: FusedLocationProviderClient
+
+    var isFirstTime = true
+    var lastLocation: Location? = null
+    lateinit var pref : AppPref
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
+        pref = AppPref(this)
         fusedLocation = LocationServices.getFusedLocationProviderClient(this)
         getLocation()
     }
 
-    private fun getLocation(){
+    private fun getLocation() {
 
-        if (checkPermissions()){
-            if (isLocationEnabled()){
-                fusedLocation.lastLocation.addOnCompleteListener(this){task ->
+        if (checkPermissions()) {
+            if (isLocationEnabled()) {
+                fusedLocation.lastLocation.addOnCompleteListener(this) { task ->
                     var location = task.result
                     if (location == null) {
                         requestNewLocationData()
                     } else {
-                        viewModel.getAllPlaces(location.latitude,location.longitude)?.observe(this,
+                        viewModel.getAllPlaces(location.latitude, location.longitude)?.observe(this,
                             Observer<List<Item>> { items ->
                                 pb_loading.visibility = View.GONE
-                                if (items != null){
+                                if (items != null) {
                                     adapter = PlaceAdapter(items)
                                     rv_places.adapter = adapter
                                     rv_places.layoutManager = LinearLayoutManager(this)
-                                }else{
+                                } else {
                                     lay_error.visibility = View.VISIBLE
                                 }
                             })
@@ -97,7 +104,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isLocationEnabled(): Boolean {
-        var locationManager: LocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        var locationManager: LocationManager =
+            getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
             LocationManager.NETWORK_PROVIDER
         )
@@ -106,44 +114,59 @@ class MainActivity : AppCompatActivity() {
     private fun requestNewLocationData() {
         var mLocationRequest = LocationRequest()
         mLocationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-        mLocationRequest.interval = 0
-        mLocationRequest.fastestInterval = 0
-        mLocationRequest.numUpdates = 1
+        mLocationRequest.interval = 2000
+        mLocationRequest.fastestInterval = 1000
 
         fusedLocation = LocationServices.getFusedLocationProviderClient(this)
         fusedLocation!!.requestLocationUpdates(
-            mLocationRequest, mLocationCallback,
+            mLocationRequest, getLocationCallback,
             Looper.myLooper()
         )
     }
 
-    private val mLocationCallback = object : LocationCallback() {
+    private val getLocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            var mLastLocation: Location = locationResult.lastLocation
-            viewModel.getAllPlaces(mLastLocation.latitude,mLastLocation.longitude)?.observe(this@MainActivity,
+            if (isFirstTime) {
+                lastLocation = locationResult.lastLocation
+                isFirstTime = false
+                displayAllPlaces(lastLocation!!)
+            } else {
+                if (lastLocation!!.distanceTo(locationResult.lastLocation).toInt() == 500) {
+                    lastLocation = locationResult.lastLocation
+                    displayAllPlaces(lastLocation!!)
+                }
+            }
+        }
+    }
+
+    fun displayAllPlaces(lastLocation: Location) {
+        viewModel.getAllPlaces(lastLocation.latitude, lastLocation.longitude)
+            ?.observe(this@MainActivity,
                 Observer<List<Item>> { items ->
                     pb_loading.visibility = View.GONE
-                    if (items != null){
+                    if (items != null) {
                         adapter = PlaceAdapter(items)
                         rv_places.adapter = adapter
                         rv_places.layoutManager = LinearLayoutManager(this@MainActivity)
-                    }else{
+                    } else {
                         lay_error.visibility = View.VISIBLE
                     }
                 })
-        }
     }
 
     private fun requestPermissions() {
         ActivityCompat.requestPermissions(
             this,
-            arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
-            PERMISSION_ID
+            arrayOf(
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ),
+            permissionRequestCode
         )
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        if (requestCode == PERMISSION_ID) {
+        if (requestCode == permissionRequestCode) {
             if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                 getLocation()
             }
@@ -152,12 +175,26 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
+        menu.getItem(0).title = pref.getMode()
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_settings -> true
+            R.id.mi_mode -> {
+                if (pref.getMode() == Constant.RealTime){
+                    pref.setMode(Constant.Single)
+                    item.title = Constant.Single
+                    fusedLocation.removeLocationUpdates(getLocationCallback)
+                    Toast.makeText(this@MainActivity,"No location updates is available",Toast.LENGTH_SHORT).show()
+                }else{
+                    pref.setMode(Constant.RealTime)
+                    item.title = Constant.RealTime
+                    requestNewLocationData()
+                    Toast.makeText(this@MainActivity,"Location will be updated after 500m",Toast.LENGTH_SHORT).show()
+                }
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
